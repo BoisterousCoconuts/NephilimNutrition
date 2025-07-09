@@ -1,0 +1,352 @@
+/* ------------------ GLOBAL RESETS & BASICS ------------------ */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background: #f5f7fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* ------------------ CONTAINER STYLES ------------------ */
+.container,
+.content-column {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.container {
+  padding: 30px 50px;
+  text-align: center;
+}
+
+.content-column {
+  width: 100%;
+  max-width: 600px;
+  margin: 48px auto 0 auto;
+  padding: 32px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 700px) {
+  .content-column {
+    padding: 16px 4vw;
+  }
+}
+
+/* ------------------ FORM STYLES ------------------ */
+.form-container {
+  max-width: 600px;
+  margin: 40px auto 0 auto;
+  padding: 40px 22px;
+  background: #fefefe;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  font-size: 16px;
+}
+
+.form-container h2,
+.section-title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #1a52b9;
+  font-size: 1.6em;
+  font-weight: 700;
+  border-bottom: 1px solid #dcdfe6;
+  padding-bottom: 10px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px 20px;
+  margin-bottom: 20px;
+}
+
+input, select, button, form button {
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+input, select {
+  border: 1px solid #ccc;
+}
+
+form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #1a52b9;
+  color: white;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 0;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+form button:hover,
+button:hover {
+  background-color: #5645a0;
+}
+
+/* Dynamic and log rows for ingredient/recipe/pantry forms */
+.dynamic-row, .log-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.dynamic-row > *:not(button),
+.log-row > *:not(button) {
+  flex: 1;
+}
+.dynamic-row button, .log-row button {
+  flex: 0 0 auto;
+}
+
+/* Buttons general */
+button {
+  display: block;
+  width: 200px;
+  margin: 10px auto;
+  font-size: 16px;
+  background-color: #1a52b9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* Form action buttons row */
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* Feedback / Response Messages */
+#responseMsg {
+  margin-top: 15px;
+  color: #1a52b9;
+  text-align: center;
+}
+
+/* ------------------ NAVBAR STYLES ------------------ */
+.nav-header {
+  width: 100%;
+  background: linear-gradient(to right, #1a52b9 85%, #5645a0);
+  box-shadow: 0 2px 10px rgba(26, 82, 185, 0.07);
+  color: white;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+
+.nav-left, .nav-right {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-center {
+  flex: 1;
+  text-align: center;
+  font-size: 1.4em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+.nav-header button {
+  background: transparent;
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.16s;
+}
+.nav-header button:hover {
+  background: rgba(255,255,255,0.16);
+}
+
+/* Margin below nav for content */
+.main-content {
+  margin-top: 64px;
+}
+
+/* ------------------ CARD/ACCORDION STYLES ------------------ */
+/* Card (accordion) structure for ingredients/recipes/logs */
+.card-item,
+.log-item {
+  border: 1px solid #e0e4ec;
+  border-radius: 9px;
+  margin-bottom: 18px;
+  background: #f9fafd;
+  box-shadow: 0 1px 4px rgba(26,82,185,0.06);
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header,
+.log-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1.14em;
+  font-weight: 600;
+  padding: 18px 24px;
+  background: #f3f4f8;
+  border-radius: 9px 9px 0 0;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.card-arrow {
+  display: inline-block;
+  width: 1.1em;
+  margin-right: 14px;
+  transition: transform 0.2s;
+  font-size: 1.23em;
+  color: #555;
+}
+.card-item.active .card-arrow {
+  transform: rotate(90deg);
+}
+
+.card-header:focus, .log-header:focus {
+  outline: 2px solid #6a8de6;
+}
+.card-header:hover, .log-header:hover {
+  background: #e9ebf2;
+}
+
+.card-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.card-actions button {
+  margin-left: 7px;
+  padding: 7px 15px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.98em;
+  cursor: pointer;
+  background: #1a52b9;
+  color: #fff;
+  transition: background 0.16s;
+}
+.card-actions button:hover { background: #5645a0; }
+.card-actions .delete-btn { background: #c03c45; }
+.card-actions .delete-btn:hover { background: #891924; }
+
+/* Details in cards/accordion */
+.card-details,
+.log-details {
+  padding: 20px 28px 22px 46px;
+  background: #fff;
+  border-top: 1px solid #eee;
+  border-radius: 0 0 9px 9px;
+  font-size: 1em;
+  line-height: 1.85;
+  display: none;
+}
+.card-item.active .card-details,
+.log-item.active .log-details {
+  display: block;
+  animation: fadeIn 0.19s;
+}
+@keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+
+/* ------------------ UL & LIST STYLES ------------------ */
+ul.recipe-list, ul.ingredient-list {
+  margin: 0 0 0 12px;
+  padding-left: 1.15em;
+}
+ul.recipe-list li, ul.ingredient-list li {
+  margin-bottom: 2px;
+  font-size: 1em;
+}
+
+/* ------------------ PANTRY & LOGS SECTIONS ------------------ */
+.page-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.filter-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.filter-section label {
+  margin: 0 10px;
+  font-weight: bold;
+}
+
+.filter-section input[type="date"] {
+  padding: 6px;
+  font-size: 1rem;
+}
+
+.filter-section button {
+  padding: 8px 12px;
+  font-size: 1rem;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.summary-box {
+  background: #f9fafd;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.summary-box ul {
+  margin-left: 20px;
+}
+
+.log-accordion {
+  width: 100%;
+}
+
+.recipe-subsection {
+  margin-top: 12px;
+}
+.recipe-subsection h4 {
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+.recipe-subsection ul {
+  margin-left: 16px;
+}

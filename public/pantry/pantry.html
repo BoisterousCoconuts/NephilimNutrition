@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pantry Service - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    /* Esnures cards stack nicely */
+    .content-column { gap: 32px; }
+  </style>
+</head>
+<body>
+  <script src="../main.js"></script>
+
+  <div class="content-column page-container">
+    <!-- FORM CARD -->
+    <div class="form-container">
+      <h2 class="section-title">Pantry Service: What Can I Cook?</h2>
+      <form id="pantryForm">
+        <label>Ingredients On Hand:</label>
+        <div id="pantry-entries-list"></div>
+        <button type="button" id="add-pantry-row-btn">Add Ingredient</button>
+        <div class="form-buttons">
+          <button type="button" onclick="window.location.reload()">Reset</button>
+          <button type="submit">Check Recipes</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- RESULTS CARDS -->
+    <div id="pantry-results"></div>
+  </div>
+
+  <script>
+    let allIngredients = [];
+    let pantryRowId = 0;
+    const allUnits = ["g","oz","cup","tbsp","tsp","ml","lb","unit"];
+
+    // 1.) fetch saved ingredients
+    async function fetchUserIngredients() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) { alert("Not logged in."); return []; }
+      const res = await fetch(`/api/ingredients?userPublicId=${encodeURIComponent(userPublicId)}`);
+      const { ingredients } = await res.json();
+      return Array.isArray(ingredients) ? ingredients : [];
+    }
+
+    // 2.) add one row to the form
+    function addPantryRow() {
+      const list = document.getElementById("pantry-entries-list");
+      const row = document.createElement("div");
+      row.className = "log-row";
+      row.dataset.rowId = pantryRowId++;
+
+      // ingredient select
+      const sel = document.createElement("select");
+      sel.required = true; sel.name = "ingredient";
+      sel.innerHTML = `<option value="">--Select Ingredient--</option>` +
+        allIngredients.map(i=>`<option value="${i._id}">${i.name} (${i.servingUnit})</option>`).join("");
+
+      // amount input
+      const amt = document.createElement("input");
+      amt.type="number"; amt.name="amount"; amt.placeholder="Amount";
+      amt.min="0.01"; amt.step="any"; amt.required=true;
+
+      // unit select
+      const unitSel = document.createElement("select");
+      unitSel.name="unit";
+      allUnits.forEach(u=> unitSel.innerHTML+=`<option value="${u}">${u}</option>` );
+
+      // remove button
+      const del = document.createElement("button");
+      del.type="button"; del.textContent="Remove";
+      del.onclick = ()=> list.removeChild(row);
+
+      row.append(sel, amt, unitSel, del);
+      list.appendChild(row);
+    }
+
+    // 3.) add-row button
+    document.getElementById("add-pantry-row-btn")
+      .addEventListener("click", addPantryRow);
+
+    // 4.)  form submit
+    document.getElementById("pantryForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const userPublicId = sessionStorage.getItem("username");
+      const rows = document.querySelectorAll(".log-row");
+      if (!rows.length) return alert("Add at least one ingredient.");
+
+      // collect pantry object
+      const pantry = {};
+      rows.forEach(r=>{
+        const id = r.querySelector("[name=ingredient]").value;
+        const am = parseFloat(r.querySelector("[name=amount]").value);
+        const un = r.querySelector("[name=unit]").value;
+        if (id && am>0) pantry[id] = { amount:am, unit:un };
+      });
+      if (!Object.keys(pantry).length) return alert("Enter valid pantry data.");
+
+      // call backend
+      const res = await fetch("/api/pantry/check", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ userPublicId, pantry })
+      });
+      const { results } = await res.json();
+
+      // filter canMake
+      const recipes = Array.isArray(results) 
+        ? results.filter(r=> r.canMake === true) 
+        : [];
+
+      // render results
+      const container = document.getElementById("pantry-results");
+      if (!recipes.length) {
+        container.innerHTML = `<div style="color:#b00;font-weight:600;">
+          No recipes can currently be made with the ingredients entered.
+        </div>`;
+      } else {
+        container.innerHTML = recipes.map(r=>`
+          <div class="card-item">
+            <div class="card-header" tabindex="0">
+              <span class="card-arrow">&#9654;</span>
+              <span>${r.recipeName} — Max: ${r.maxServings}</span>
+            </div>
+            <div class="card-details">
+              <p>You can make <strong>${r.maxServings}</strong> serving(s) of <strong>${r.recipeName}</strong>.</p>
+              <h4>Nutrition per Serving:</h4>
+              <ul class="ingredient-list">
+                <li>Calories: ${r.nutrition.calories}</li>
+                <li>Protein: ${r.nutrition.protein} g</li>
+                <li>Fat: ${r.nutrition.fat} g</li>
+                <li>Carbs: ${r.nutrition.carbs} g</li>
+                <li>Sugar: ${r.nutrition.sugar} g</li>
+              </ul>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      // accordion toggle
+      container.querySelectorAll(".card-header").forEach(h=>{
+        h.addEventListener("click", ()=> h.parentElement.classList.toggle("active"));
+        h.addEventListener("keydown", e=>{
+          if (e.key==="Enter"||e.key===" ") h.click();
+        });
+      });
+    });
+
+    // 5.) initial load
+    window.addEventListener("DOMContentLoaded", async ()=>{
+      allIngredients = await fetchUserIngredients();
+      if (!allIngredients.length) {
+        document.getElementById("pantry-entries-list")
+          .innerHTML = "<em>No ingredients saved. Please add some first.</em>";
+        document.querySelector("button[type=submit]").disabled = true;
+      } else {
+        addPantryRow();
+      }
+    });
+  </script>
+</body>
+</html>

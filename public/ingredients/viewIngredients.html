@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Ingredients - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+  <div class="content-column" id="ingredients-list">
+    <h2 class="section-title">Your Saved Ingredients</h2>
+  </div>
+  <script>
+    //edit action for ingredient
+    function editIngredient(id) {
+      sessionStorage.setItem("editIngredientId", id);
+      window.location.href = "addIngredients.html";
+    }
+
+    //delete action for ingredient, ensuring whether user does in fact wish to delete
+    async function deleteIngredient(id, name) {
+      if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+      const res = await fetch("/api/ingredients/" + id, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Deleted!");
+        loadIngredients();
+      } else {
+        alert("Error: " + (data.message || "Failed to delete."));
+      }
+    }
+
+    // Loads all user's ingredients, renders in an accordian style
+    async function loadIngredients() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return;
+      }
+      const res = await fetch("/api/ingredients?userPublicId=" + encodeURIComponent(userPublicId));
+      const data = await res.json();
+      const ingredients = Array.isArray(data.ingredients) ? data.ingredients : [];
+      const container = document.getElementById("ingredients-list");
+      if (!ingredients.length) {
+        container.innerHTML = "<em>No ingredients found.</em>";
+        return;
+      }
+      ingredients.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Retain the header
+      const header = container.querySelector(".section-title");
+      container.innerHTML = "";
+      if (header) {
+        container.appendChild(header);
+      }
+      //constructs an accordian for each ingredient
+      for (const ing of ingredients) {
+        const div = document.createElement("div");
+        div.className = "card-item";
+        div.innerHTML = `
+          <div class="card-header" tabindex="0">
+            <span class="card-arrow">&#9654;</span>
+            <span>${ing.name} (${ing.servingAmount} ${ing.servingUnit})</span>
+            <span class="card-actions">
+              <button onclick="editIngredient('${ing._id}')">Edit</button>
+              <button class="delete-btn" onclick="deleteIngredient('${ing._id}', '${ing.name}')">Delete</button>
+            </span>
+          </div>
+          <div class="card-details">
+            <b>Nutrition per ${ing.servingAmount} ${ing.servingUnit}:</b>
+            <ul class="ingredient-list">
+              <li><b>Calories:</b> ${ing.calories}</li>
+              <li><b>Protein:</b> ${ing.protein} g</li>
+              <li><b>Fat:</b> ${ing.fat} g</li>
+              <li><b>Carbs:</b> ${ing.carbs} g</li>
+              <li><b>Sugar:</b> ${ing.sugar} g</li>
+            </ul>
+          </div>
+        `;
+        container.appendChild(div);
+      }
+
+      // Card accordion logic
+      document.querySelectorAll('.card-header').forEach(header => {
+        header.addEventListener('click', function() {
+          const item = this.parentElement;
+          item.classList.toggle('active');
+        });
+        header.addEventListener('keydown', function(e) {
+          if (e.key === "Enter" || e.key === " ") this.click();
+        });
+      });
+    }
+    loadIngredients();
+  </script>
+</body>
+</html>

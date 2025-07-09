@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Account - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Create Account</h2>
+    <form id="createAccountForm">
+      <!--Input form for user logging in-->
+      <div class="form-grid">
+        <label for="publicId">Public ID:</label>
+        <input type="text" id="publicId" name="publicId" required />
+
+        <label for="privateId">Private ID:</label>
+        <input type="text" id="privateId" name="privateId" required />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <button type="submit">Create Account</button>
+      <p id="responseMsg"></p>
+    </form>
+  </div>
+
+  <script>
+    //Handles submission of create account form
+    document.getElementById("createAccountForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const publicId = document.getElementById("publicId").value;
+      const privateId = document.getElementById("privateId").value;
+      const password = document.getElementById("password").value;
+
+      // POSTs new user data to backend
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId, privateId, password }),
+      });
+
+      //provides prompt for whether or not account creation successful
+      const data = await res.json();
+      if (res.ok) {
+        alert("Your account has been made successfully");
+        window.location.href = "/login.html";
+      } else {
+        alert("Failed to create account: " + (data.message || ""));
+      }
+    });
+  </script>
+</body>
+</html>

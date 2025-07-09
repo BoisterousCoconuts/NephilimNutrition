@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enter Nutritional Needs - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+
+  <div class="form-container">
+    <h2>Manual Nutritional Needs Entry</h2>
+    <form id="nutritionalNeedsForm">
+      <div class="form-grid">
+        <label for="calories">Calories:</label>
+        <input type="number" id="calories" required />
+
+        <label for="protein">Protein (g):</label>
+        <input type="number" id="protein" required />
+
+        <label for="fat">Fat (g):</label>
+        <input type="number" id="fat" required />
+
+        <label for="carbs">Carbs (g):</label>
+        <input type="number" id="carbs" required />
+
+        <label for="sugar">Sugar (g):</label>
+        <input type="number" id="sugar" required />
+      </div>
+
+      <div class="form-buttons">
+        <button type="button" onclick="cancelEntry()">Cancel</button>
+        <button type="submit">Submit</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Cancel button returns to homepage
+    function cancelEntry() {
+      window.location.href = "/homepage.html";
+    }
+
+    // Prefill form if user's needs already exist
+    window.addEventListener('DOMContentLoaded', async function() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) return;
+      try {
+        const res = await fetch(`/api/nutritional-needs?userPublicId=${encodeURIComponent(userPublicId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const needs = data.needs;
+        if (needs) {
+          document.getElementById("calories").value = needs.calories;
+          document.getElementById("protein").value  = needs.protein;
+          document.getElementById("fat").value      = needs.fat;
+          document.getElementById("carbs").value    = needs.carbs;
+          document.getElementById("sugar").value    = needs.sugar;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Handle form submission to save or update needs
+    document.getElementById("nutritionalNeedsForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return;
+      }
+
+      const payload = {
+        userPublicId,
+        calories: +document.getElementById("calories").value,
+        protein: +document.getElementById("protein").value,
+        fat:     +document.getElementById("fat").value,
+        carbs:   +document.getElementById("carbs").value,
+        sugar:   +document.getElementById("sugar").value,
+      };
+
+      try {
+        const res = await fetch("/api/nutritional-needs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Nutritional needs saved!");
+          window.location.href = "/homepage.html";
+        } else {
+          alert("Error: " + (data.message || "Failed to save."));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Server error.");
+      }
+    });
+  </script>
+</body>
+</html>

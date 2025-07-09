@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Ingredient - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+
+  <div class="form-container">
+    <h2>Add Ingredient</h2>
+    <form id="ingredientForm">
+      <div class="form-grid">
+        <label for="name">Name:</label>
+        <input type="text" id="name" required />
+
+        <label for="calories">Calories:</label>
+        <input type="number" id="calories" required />
+
+        <label for="protein">Protein (g):</label>
+        <input type="number" id="protein" required />
+
+        <label for="fat">Fat (g):</label>
+        <input type="number" id="fat" required />
+
+        <label for="carbs">Carbs (g):</label>
+        <input type="number" id="carbs" required />
+
+        <label for="sugar">Sugar (g):</label>
+        <input type="number" id="sugar" required />
+
+        <label for="servingAmount">Serving Amount:</label>
+        <input type="number" id="servingAmount" required min="0.01" step="any" />
+
+        <label for="servingUnit">Serving Unit:</label>
+        <select id="servingUnit" required>
+          <option value="">--Select Unit--</option>
+          <option value="g">Gram (g)</option>
+          <option value="oz">Ounce (oz)</option>
+          <option value="fl oz">Fluid Ounce (fl oz)</option>
+          <option value="cup">Cup</option>
+          <option value="ml">Milliliter (ml)</option>
+        </select>
+      </div>
+
+      <div class="form-buttons">
+        <button type="button" onclick="cancelIngredient()">Cancel</button>
+        <button type="submit">Submit</button>
+      </div>
+    </form>
+  </div>
+
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+  const editId = sessionStorage.getItem("editIngredientId");
+
+  // Autofills fields if editing
+  if (editId) {
+    document.querySelector("h2").textContent = "Edit Ingredient";
+    fetch("/api/ingredients/" + editId)
+      .then(res => res.json())
+      .then(ing => {
+        if (!ing || !ing._id) {
+          alert("Ingredient not found.");
+          sessionStorage.removeItem("editIngredientId");
+          window.location.href = "/ingredients.html";
+          return;
+        }
+        // Prepopulate fields for editing
+        document.getElementById("name").value = ing.name;
+        document.getElementById("calories").value = ing.calories;
+        document.getElementById("protein").value = ing.protein;
+        document.getElementById("fat").value = ing.fat;
+        document.getElementById("carbs").value = ing.carbs;
+        document.getElementById("sugar").value = ing.sugar;
+        document.getElementById("servingAmount").value = ing.servingAmount;
+        document.getElementById("servingUnit").value = ing.servingUnit;
+      });
+  }
+
+  // Cancel returns to ingredient list
+  window.cancelIngredient = function() {
+    sessionStorage.removeItem("editIngredientId");
+    window.location.href = "/ingredients.html";
+  };
+
+  // handles submit form for adding or updating
+  document.getElementById("ingredientForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const userPublicId = sessionStorage.getItem("username");
+    if (!userPublicId) {
+      alert("User not logged in.");
+      return;
+    }
+
+    const payload = {
+      userPublicId,
+      name: document.getElementById("name").value,
+      calories: +document.getElementById("calories").value,
+      protein: +document.getElementById("protein").value,
+      fat: +document.getElementById("fat").value,
+      carbs: +document.getElementById("carbs").value,
+      sugar: +document.getElementById("sugar").value,
+      servingAmount: +document.getElementById("servingAmount").value,
+      servingUnit: document.getElementById("servingUnit").value
+    };
+
+    try {
+      let res, data;
+      if (editId) {
+        // PUT to update
+        res = await fetch("/api/ingredients/" + editId, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        sessionStorage.removeItem("editIngredientId");
+      } else {
+        // POST to create
+        res = await fetch("/api/ingredients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
+      data = await res.json();
+
+      if (res.ok) {
+        alert(editId ? "Ingredient updated!" : "Ingredient saved!");
+        window.location.href = "/ingredients.html";
+      } else {
+        alert("Error: " + (data.message || "Failed to save ingredient."));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Server error.");
+    }
+  });
+});
+</script>
+</body>
+</html>

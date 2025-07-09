@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Nutrition Log - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+  <div class="form-container">
+    <h2>Add Nutrition Log Entries</h2>
+    <form id="logForm">
+      <label for="date">Date:</label>
+      <input type="date" id="date" required />
+
+      <label>Entries:</label>
+      <div id="log-entries-list"></div>
+      <button type="button" id="add-log-row-btn">Add Recipe</button>
+
+      <div class="form-buttons">
+        <button type="button" onclick="cancelLog()">Cancel</button>
+        <button type="submit">Save Log Entries</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let allRecipes = [];
+    let logRowId = 0;
+
+    // Fetches user's recipes for dropdown options
+    async function fetchUserRecipes() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return [];
+      }
+      const res = await fetch("/api/recipes?userPublicId=" + encodeURIComponent(userPublicId));
+      const data = await res.json();
+      return Array.isArray(data.recipes) ? data.recipes : [];
+    }
+
+    // Adds a log entry row (dropdown + servings input + remove btn)
+    function addLogRow(selectedId = "", servings = "") {
+      const list = document.getElementById("log-entries-list");
+      const row = document.createElement("div");
+      row.className = "log-row";
+      row.dataset.rowId = logRowId++;
+
+      // Recipe dropdown
+      const select = document.createElement("select");
+      select.required = true;
+      for (const rec of allRecipes) {
+        const opt = document.createElement("option");
+        opt.value = rec._id;
+        opt.textContent = rec.name;
+        if (selectedId && rec._id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+      }
+
+      // Servings input
+      const servingsInput = document.createElement("input");
+      servingsInput.type = "number";
+      servingsInput.placeholder = "Servings";
+      servingsInput.required = true;
+      servingsInput.min = "0.01";
+      servingsInput.step = "any";
+      servingsInput.value = servings || "";
+
+      // Remove button
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Remove";
+      delBtn.onclick = () => list.removeChild(row);
+
+      row.appendChild(select);
+      row.appendChild(servingsInput);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    }
+
+    // Add log row when user clicks button
+    document.getElementById("add-log-row-btn").addEventListener("click", () => {
+      addLogRow();
+    });
+
+    // Cancel handler
+    function cancelLog() {
+      window.location.href = "nutritionalLogs.html";
+    }
+
+    // Save log entries on submit
+    document.getElementById("logForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const userPublicId = sessionStorage.getItem("username");
+      const date = document.getElementById("date").value;
+      const logRows = document.querySelectorAll(".log-row");
+      if (logRows.length === 0) {
+        alert("Please add at least one recipe to your log.");
+        return;
+      }
+
+      // Gather payload as array of log objects
+      const payload = [];
+      for (const row of logRows) {
+        const select = row.querySelector("select");
+        const servingsInput = row.querySelector("input");
+        payload.push({
+          userPublicId,
+          date,
+          recipeId: select.value,
+          servings: +servingsInput.value
+        });
+      }
+
+      try {
+        const res = await fetch("/api/logs/entries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert("Log entries saved!");
+          window.location.href = "nutritionalLogs.html";
+        } else {
+          alert("Error: " + (data.message || "Failed to save log entries."));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Server error.");
+      }
+    });
+
+    // On page load, fetches recipes, set today as default date, add one log row
+    window.addEventListener('DOMContentLoaded', async function() {
+      allRecipes = await fetchUserRecipes();
+      if (allRecipes.length === 0) {
+        document.getElementById("add-log-row-btn").disabled = true;
+        alert("No saved recipes found. Please add recipes first.");
+        return;
+      }
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+      addLogRow();
+    });
+  </script>
+</body>
+</html>

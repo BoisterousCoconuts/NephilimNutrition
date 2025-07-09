@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Daily Logs - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+  <div class="page-container">
+    <h2 class="section-title" style="text-align:center;">Your Nutrition Logs by Date</h2>
+
+    <div class="filter-section">
+      <label>
+        Start Date:
+        <input type="date" id="startDate">
+      </label>
+      <label>
+        End Date:
+        <input type="date" id="endDate">
+      </label>
+      <button onclick="loadLogs()">Apply</button>
+    </div>
+
+    <div id="summary" class="summary-box"></div>
+    <div id="logs-list" class="log-accordion"></div>
+  </div>
+
+  <script>
+    // Loads and displays log data for the user
+    async function loadLogs() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return;
+      }
+
+      const startDate = document.getElementById("startDate")?.value;
+      const endDate = document.getElementById("endDate")?.value;
+
+      let url = "/api/logs/byDateGrouped?userPublicId=" + encodeURIComponent(userPublicId);
+      if (startDate) url += "&startDate=" + encodeURIComponent(startDate);
+      if (endDate) url += "&endDate=" + encodeURIComponent(endDate);
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const summaryDiv = document.getElementById("summary");
+      const container = document.getElementById("logs-list");
+      summaryDiv.innerHTML = "";
+      container.innerHTML = "";
+
+      if (!data.logsByDate?.length) {
+        container.innerHTML = "<em>No logs found.</em>";
+        return;
+      }
+
+      // Render the time frame summary if present
+      const summary = data.summary;
+      if (summary) {
+        const s = summary;
+        summaryDiv.innerHTML = `
+          <b>Time Frame Summary:</b><br>
+          <ul>
+            ${Object.entries(s.nutrients).map(([k,v])=>
+              `<li>
+                ${k.charAt(0).toUpperCase()+k.slice(1)}: Average ${v.average} (${v.percent}% of goal), met goal ${v.goalMetDays} of ${s.recordDays} days
+              </li>`
+            ).join('')}
+          </ul>
+          <b>Deficiencies</b><br>
+          ${
+            s.deficiencies.length
+              ? `<ul style="color:red;margin-top:8px;">${
+                  s.deficiencies.map(nutrient =>
+                    `<li>You currently have a deficiency in ${nutrient.charAt(0).toUpperCase()+nutrient.slice(1)}</li>`
+                  ).join('')
+                }</ul>`
+              : `<b style="color:green;">No deficiencies detected.</b>`
+          }
+        `;
+      }
+
+      // Render log entries as accordions (expandable per date)
+      for (const day of data.logsByDate) {
+        const div = document.createElement("div");
+        div.className = "log-item";
+        div.innerHTML = `
+          <div class="log-header" tabindex="0">
+            <span>${day.date}</span>
+            <span>
+              ${day.totals.calories} cal |
+              ${day.totals.protein}g protein |
+              ${day.totals.carbs}g carbs |
+              ${day.totals.fat}g fat
+            </span>
+          </div>
+          <div class="log-details">
+            ${day.entries.map(e=>`
+              <div>${e.servings}× ${e.recipeName}</div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(div);
+      }
+
+      // Expand/collapse logic for each day's log
+      document.querySelectorAll('.log-header').forEach(header=>{
+        header.addEventListener('click', function(){
+          this.parentElement.classList.toggle('active');
+        });
+        header.addEventListener('keydown', function(e){
+          if (e.key==="Enter"||e.key===" ") this.click();
+        });
+      });
+    }
+
+    // Initial load on page ready
+    loadLogs();
+  </script>
+</body>
+</html>

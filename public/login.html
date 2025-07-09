@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Log In</h2>
+    <form id="loginForm">
+      <div class="form-grid">
+        <label for="publicId">Public ID:</label>
+        <input type="text" id="publicId" name="publicId" required />
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <button type="submit">Log In</button>
+    </form>
+    <p id="loginMessage"></p>
+  </div>
+
+  <script>
+    //Handles submission from login form
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const publicId = document.getElementById("publicId").value;
+      const password = document.getElementById("password").value;
+
+      // POSTs login credentials to backend
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId, password }),
+      });
+
+      //keeps userId if login successful, gives error message otherwise
+      const data = await res.json();
+      if (res.ok) {
+        sessionStorage.setItem("username", publicId);
+        alert("Login successful!");
+        window.location.href = "/homepage.html";
+      } else {
+        alert("Error: " + (data.message || "Login failed"));
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Recipes - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+  <div class="content-column" id="recipes-list">
+    <h2 class="section-title">Your Saved Recipes</h2>
+  </div>
+  <script>
+    // Edit button handler
+    function editRecipe(id) {
+      sessionStorage.setItem("editRecipeId", id);
+      window.location.href = "addRecipes.html";
+    }
+    // Delete button handler
+    async function deleteRecipe(id, name) {
+      if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+      const res = await fetch("/api/recipes/" + id, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Deleted!");
+        loadRecipes();
+      } else {
+        alert("Error: " + (data.message || "Failed to delete."));
+      }
+    }
+
+    // Load and render all recipes for user
+    async function loadRecipes() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return;
+      }
+      const res = await fetch("/api/recipes?userPublicId=" + encodeURIComponent(userPublicId));
+      const data = await res.json();
+      const recipes = Array.isArray(data.recipes) ? data.recipes : [];
+      const container = document.getElementById("recipes-list");
+      if (!recipes.length) {
+        container.innerHTML = "<em>No recipes found.</em>";
+        return;
+      }
+      recipes.sort((a, b) => a.name.localeCompare(b.name));
+      const header = container.querySelector(".section-title");
+      container.innerHTML = "";
+      if (header) {
+        container.appendChild(header);
+      }
+      for (const rec of recipes) {
+        const div = document.createElement("div");
+        div.className = "card-item";
+        div.innerHTML = `
+          <div class="card-header" tabindex="0">
+            <span class="card-arrow">&#9654;</span>
+            <span>${rec.name} (Serves: ${rec.servings})</span>
+            <span class="card-actions">
+              <button onclick="editRecipe('${rec._id}')">Edit</button>
+              <button class="delete-btn" onclick="deleteRecipe('${rec._id}', '${rec.name}')">Delete</button>
+            </span>
+          </div>
+          <div class="card-details">
+            <div class="loading-bar">Loading details...</div>
+          </div>
+        `;
+        container.appendChild(div);
+      }
+      // Accordion logic
+      document.querySelectorAll('.card-header').forEach(header => {
+        header.addEventListener('click', function() {
+          const item = this.parentElement;
+          item.classList.toggle('active');
+          const detailsDiv = item.querySelector('.card-details');
+          if (item.classList.contains('active') && !detailsDiv.dataset.loaded) {
+            detailsDiv.innerHTML = `<div class="loading-bar">Loading details...</div>`;
+            loadRecipeDetails(item, detailsDiv);
+          }
+        });
+        header.addEventListener('keydown', function(e) {
+          if (e.key === "Enter" || e.key === " ") this.click();
+        });
+      });
+    }
+
+    // Load and display recipe details. ingredients and nutrition as bullet list
+    async function loadRecipeDetails(recipeItemDiv, detailsDiv) {
+      const recipeId = recipeItemDiv.querySelector(".card-actions button").getAttribute("onclick").match(/'(.*?)'/)[1];
+      try {
+        const res = await fetch(`/api/recipes/${recipeId}/full`);
+        if (!res.ok) {
+          detailsDiv.innerHTML = `<div style="color:red;">Failed to load recipe details.</div>`;
+          return;
+        }
+        const recipe = await res.json();
+        if (!recipe.ingredients || recipe.ingredients.length === 0) {
+          detailsDiv.innerHTML = "<em>No ingredients found in this recipe.</em>";
+          detailsDiv.dataset.loaded = "true";
+          return;
+        }
+        const perServing = recipe.nutrition?.perServing || {};
+
+        // Render ingredients
+        const ingredientRows = recipe.ingredients.map(item =>
+          `<li>
+            <b>${item.ingredient ? item.ingredient.name : "(deleted ingredient)"}:</b>
+            ${item.amount} ${item.unit || (item.ingredient ? item.ingredient.servingUnit : "")}
+          </li>`
+        ).join("");
+
+        // Render nutrition as a bullet list
+        const nutritionRows = `
+          <li><b>Calories:</b> ${perServing.calories ?? 0}</li>
+          <li><b>Protein:</b> ${perServing.protein ?? 0} g</li>
+          <li><b>Fat:</b> ${perServing.fat ?? 0} g</li>
+          <li><b>Carbs:</b> ${perServing.carbs ?? 0} g</li>
+          <li><b>Sugar:</b> ${perServing.sugar ?? 0} g</li>
+        `;
+
+        detailsDiv.innerHTML = `
+          <b>Ingredients:</b>
+          <ul class="recipe-list">
+            ${ingredientRows}
+          </ul>
+          <b>Nutrition Per Serving:</b>
+          <ul class="recipe-list">
+            ${nutritionRows}
+          </ul>
+        `;
+        detailsDiv.dataset.loaded = "true";
+      } catch (err) {
+        console.error(err);
+        detailsDiv.innerHTML = `<div style="color:red;">Error loading details.</div>`;
+      }
+    }
+
+    loadRecipes();
+  </script>
+</body>
+</html>

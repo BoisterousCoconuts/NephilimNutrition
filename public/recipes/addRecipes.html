@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add/Edit Recipe - Nephilim Nutrition</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <script src="../main.js"></script>
+  <div class="form-container">
+    <h2 id="form-title">Add Recipe</h2>
+    <form id="recipeForm">
+      <label for="name">Recipe Name:</label>
+      <input type="text" id="name" required />
+
+      <label for="servings">Servings:</label>
+      <input type="number" id="servings" required min="1" step="1" />
+
+      <label>Ingredients:</label>
+      <div id="ingredients-list"></div>
+      <button type="button" id="add-ingredient-btn">Add Ingredient</button>
+
+      <div class="form-buttons">
+        <button type="button" onclick="cancelRecipe()">Cancel</button>
+        <button type="submit">Save Recipe</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // List of all user's ingredients (populated on load)
+    let allIngredients = [];
+    let ingredientRowId = 0;
+    let editId = sessionStorage.getItem("editRecipeId");
+
+    // Fetch user's ingredients from API
+    async function fetchUserIngredients() {
+      const userPublicId = sessionStorage.getItem("username");
+      if (!userPublicId) {
+        alert("User not logged in.");
+        return [];
+      }
+      const res = await fetch("/api/ingredients?userPublicId=" + encodeURIComponent(userPublicId));
+      const data = await res.json();
+      return Array.isArray(data.ingredients) ? data.ingredients : [];
+    }
+
+    // Add an ingredient input row (optionally with defaults)
+    function addIngredientRow(selectedId = "", amount = "", unit = "") {
+      const list = document.getElementById("ingredients-list");
+      const row = document.createElement("div");
+      row.className = "dynamic-row";
+      row.dataset.rowId = ingredientRowId++;
+
+      // Ingredient select
+      const select = document.createElement("select");
+      select.required = true;
+      for (const ing of allIngredients) {
+        const opt = document.createElement("option");
+        opt.value = ing._id;
+        opt.textContent = ing.name;
+        if (selectedId && ing._id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+      }
+
+      // Amount input
+      const amtInput = document.createElement("input");
+      amtInput.type = "number";
+      amtInput.placeholder = "Amount";
+      amtInput.required = true;
+      amtInput.min = "0.01";
+      amtInput.step = "any";
+      amtInput.value = amount || "";
+
+      // Unit select
+      const unitSelect = document.createElement("select");
+      unitSelect.name = "unit";
+      const unitOptions = ["g", "oz", "fl oz", "cup", "ml"];
+      for (const u of unitOptions) {
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.textContent = u;
+        if (unit === u) opt.selected = true;
+        unitSelect.appendChild(opt);
+      }
+
+      // Remove button
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Remove";
+      delBtn.onclick = () => list.removeChild(row);
+
+      row.appendChild(select);
+      row.appendChild(amtInput);
+      row.appendChild(unitSelect);
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    }
+
+    // Add ingredient row on button click
+    document.getElementById("add-ingredient-btn").addEventListener("click", () => addIngredientRow());
+
+    // Load data for editing existing recipe
+    async function loadForEdit() {
+      document.getElementById("form-title").textContent = "Edit Recipe";
+      try {
+        const res = await fetch("/api/recipes/" + editId + "/full");
+        if (!res.ok) throw new Error("Recipe not found");
+        const recipe = await res.json();
+        document.getElementById("name").value = recipe.name;
+        document.getElementById("servings").value = recipe.servings;
+        document.getElementById("ingredients-list").innerHTML = "";
+        for (const item of recipe.ingredients) {
+          addIngredientRow(
+            item.ingredient?._id || "",
+            item.amount || "",
+            item.unit || item.ingredient?.servingUnit || ""
+          );
+        }
+      } catch {
+        alert("Failed to load recipe for editing.");
+        sessionStorage.removeItem("editRecipeId");
+        window.location.href = "recipes.html";
+      }
+    }
+
+    // Cancel button handler
+    function cancelRecipe() {
+      sessionStorage.removeItem("editRecipeId");
+      window.location.href = "recipes.html";
+    }
+
+    // Form submit handler, either cancel or update
+    document.getElementById("recipeForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const userPublicId = sessionStorage.getItem("username");
+      const name = document.getElementById("name").value;
+      const servings = +document.getElementById("servings").value;
+
+      // Gather ingredient rows
+      const ingredientRows = document.querySelectorAll(".dynamic-row");
+      if (!ingredientRows.length) return alert("Please add at least one ingredient.");
+
+      const ingredients = [...ingredientRows].map(row => {
+        const selects = row.querySelectorAll("select");
+        const input = row.querySelector("input");
+        return {
+          ingredientId: selects[0].value,
+          amount: +input.value,
+          unit: selects[1]?.value || "g"
+        };
+      });
+
+      const payload = { userPublicId, name, servings, ingredients };
+      try {
+        const url = editId ? "/api/recipes/" + editId : "/api/recipes";
+        const method = editId ? "PUT" : "POST";
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(editId ? "Recipe updated!" : "Recipe saved!");
+          sessionStorage.removeItem("editRecipeId");
+          window.location.href = "recipes.html";
+        } else {
+          alert("Error: " + (data.message || "Failed to save recipe."));
+        }
+      } catch {
+        alert("Server error.");
+      }
+    });
+
+    // On page load, fetch ingredients and set up form
+    window.addEventListener('DOMContentLoaded', async () => {
+      allIngredients = await fetchUserIngredients();
+      if (!allIngredients.length) {
+        document.getElementById("add-ingredient-btn").disabled = true;
+        alert("No saved ingredients found. Please add ingredients first.");
+        return;
+      }
+      if (editId) await loadForEdit();
+      else addIngredientRow();
+    });
+  </script>
+</body>
+</html>
