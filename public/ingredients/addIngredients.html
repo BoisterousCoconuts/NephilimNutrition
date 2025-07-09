@@ -64,7 +64,7 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!ing || !ing._id) {
           alert("Ingredient not found.");
           sessionStorage.removeItem("editIngredientId");
-          window.location.href = "/ingredients.html";
+          window.location.href = "ingredients.html";
           return;
         }
         // Prepopulate fields for editing
@@ -82,7 +82,7 @@ window.addEventListener('DOMContentLoaded', function() {
   // Cancel returns to ingredient list
   window.cancelIngredient = function() {
     sessionStorage.removeItem("editIngredientId");
-    window.location.href = "/ingredients.html";
+    window.location.href = "ingredients.html";
   };
 
   // handles submit form for adding or updating
@@ -129,7 +129,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
       if (res.ok) {
         alert(editId ? "Ingredient updated!" : "Ingredient saved!");
-        window.location.href = "/ingredients.html";
+        window.location.href = "ingredients.html";
       } else {
         alert("Error: " + (data.message || "Failed to save ingredient."));
       }
