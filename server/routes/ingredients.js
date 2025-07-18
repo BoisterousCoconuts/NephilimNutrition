@@ -38,10 +38,19 @@ router.get('/:id', async (req, res) => {
 /**
  * POST /api/ingredients
  * Creates a new ingredient.
+ * Modified to accept zero values for an ingredient's nutrients
  */
 router.post('/', async (req, res) => {
   const { userPublicId, name, calories, protein, fat, carbs, sugar, servingAmount, servingUnit } = req.body;
-  if (!userPublicId || !name || !calories || !protein || !fat || !carbs || !sugar || !servingAmount || !servingUnit) {
+  if (!userPublicId || !name || 
+    calories == null || calories < 0 || 
+    protein == null || protein < 0 ||
+    fat == null || fat < 0 ||
+    carbs == null || carbs < 0 ||
+    sugar == null || sugar < 0 ||
+    servingAmount == null || servingAmount <= 0 ||
+    !servingUnit
+   ) {
     return res.status(400).json({ message: "Missing required field(s)" });
   }
   try {

@@ -88,11 +88,12 @@
         div.innerHTML = `
           <div class="log-header" tabindex="0">
             <span>${day.date}</span>
-            <span>
+            <span style="margin-left: 20px;">
               ${day.totals.calories} cal |
               ${day.totals.protein}g protein |
               ${day.totals.carbs}g carbs |
-              ${day.totals.fat}g fat
+              ${day.totals.fat}g fat |
+              ${day.totals.sugar}g sugar
             </span>
           </div>
           <div class="log-details">

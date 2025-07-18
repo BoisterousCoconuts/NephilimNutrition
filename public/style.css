@@ -112,6 +112,7 @@ button:hover {
 }
 .dynamic-row button, .log-row button {
   flex: 0 0 auto;
+  margin-bottom: 10px;
 }
 
 /* Buttons general */
@@ -349,4 +350,14 @@ ul.recipe-list li, ul.ingredient-list li {
 }
 .recipe-subsection ul {
   margin-left: 16px;
+}
+
+#add-pantry-row-btn {
+  margin-bottom: 18px;
+  margin-top: 6px;
+}
+
+#add-ingredient-btn {
+  margin-bottom: 18px;
+  margin-top: 6px;
 }

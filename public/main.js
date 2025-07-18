@@ -2,7 +2,7 @@
 
 // Function to display welcome message
 function showWelcome() {
-  const username = sessionStorage.getItem("username") || "Boss";
+  const username = sessionStorage.getItem("username") || "User";
   const welcomeEl = document.getElementById("welcome-message");
   if (welcomeEl) {
     welcomeEl.textContent = "Welcome, " + username;
@@ -12,7 +12,7 @@ function showWelcome() {
 // Universal logout handler
 function logout() {
   sessionStorage.removeItem("username");
-  window.location.href = "/";
+  window.location.href = "/index.html";
 }
 
 //retrieves header
